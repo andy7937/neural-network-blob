@@ -14,13 +14,16 @@ import organisms.Food;
 import neuralNetwork.BlobNeuralNetwork;
 import simulator.Point;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class Simulator extends JPanel {
     int mapSize = 1080;
     public List<Food> foods = new ArrayList<>();
     public List<Blob> blobs = new ArrayList<>();
     public int simulationStep = 0;
-    public int maxSimulationSteps = 1000;
+    public int maxSimulationSteps = 100;
+    public int currentGeneration = 0;
+    public int maxGenerations = 100;
     private static Simulator instance;
     private BlobNeuralNetwork blobNetwork;
 
@@ -39,16 +42,15 @@ public class Simulator extends JPanel {
         Random random = new Random();
 
         // adding foods
-        for (int i = 0; i < 500; i++) {
+        for (int i = 0; i < 100; i++) {
             foods.add(new Food(new Point(random.nextInt(mapSize), random.nextInt(mapSize))));
         }
 
-        // Create a neural network for each blob
-        blobNetwork = new BlobNeuralNetwork(4, 10, 4);
-
         // Create blobs with associated neural networks
-        for (int i = 0; i < 10; i++) {
-            Blob blob = new Blob(new Point(random.nextInt(mapSize), random.nextInt(mapSize)), blobNetwork.copy());
+        for (int i = 0; i < 20; i++) {
+            BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(15, 4, 5);
+            Blob blob = new Blob(new Point(random.nextInt(mapSize), random.nextInt(mapSize)), randomNetwork);
+    
             blobs.add(blob);
         }
 
@@ -58,29 +60,89 @@ public class Simulator extends JPanel {
     // updating simulation for each step
     private void updateSimulation() {
         updateBlobs();
+
         simulationStep++;
+        System.out.println("Simulation step: " + simulationStep);
+        for (Blob blob: blobs) {
+            System.out.println("Initial Weights: " + blob.neuralNetwork.getOutputWeights());        }
 
         if (simulationStep >= maxSimulationSteps) {
-            // Save the trained model at the end of the simulation
-            blobNetwork.saveModel("trained_blob_model.zip");
-            System.exit(0); // Terminate the simulation when done
+            // At the end of each generation
+            if (currentGeneration < maxGenerations - 1) {
+                // Save the trained model for the current generation
+                blobNetwork.saveModel("trained_blob_model_generation_" + currentGeneration + ".zip");
+                
+                // Create a new generation of blobs
+                createNewGeneration();
+                
+                // Reset simulation step
+                simulationStep = 0;
+                currentGeneration++;
+            } else {
+                // Save the final model and terminate the simulation
+                blobNetwork.saveModel("final_trained_blob_model.zip");
+                System.exit(0);
+            }
         }
     }
 
     private void updateBlobs() {
         // Update blob positions, sensor data, etc.
-
         for (Blob blob : blobs) {
-            // Get input data based on the blob's state
-            INDArray input = 5;/* generate input data based on blob's state */;
-            // Generate target data based on the desired behavior (not implemented in this example)
-            INDArray target = 5;/* generate target data based on desired behavior */
-            // Train the neural network with the current simulation step
-            blob.neuralNetwork.trainStep(input, target);
+            blob.update(foods, blobs);
         }
-
-        // Continue simulation...
     }
+
+    private void createNewGeneration() {
+        // Create a new list for the next generation
+        List<Blob> newBlobs = new ArrayList<>();
+        
+        // Create new blobs for the next generation
+        for (Blob blob : blobs) {
+            if (blob.hasEaten()) {
+
+                Blob newBlob = cloneBlobWithMutation(blob);
+                newBlobs.add(newBlob);
+
+            } else {
+                blobs.remove(blob);
+            }
+        }
+        
+        // Clear existing blobs and add the new ones
+        blobs.clear();
+        blobs.addAll(newBlobs);
+    }
+
+    private Blob cloneBlobWithMutation(Blob originalBlob) {
+        // Create a new blob as a clone of the original
+        Random random = new Random();
+        Point Point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
+        Blob clonedBlob = new Blob(Point, null);
+        
+        // Clone the neural network
+        BlobNeuralNetwork originalNN = originalBlob.neuralNetwork;
+        BlobNeuralNetwork clonedNN = originalNN.clone(); // Use the clone method of BlobNeuralNetwork
+        
+        // Introduce mutation to the weights (adjust this based on your requirements)
+        applyMutation(clonedNN.getOutputWeights());
+        
+        // Set the cloned neural network to the new blob
+        clonedBlob.neuralNetwork = clonedNN;
+        
+        return clonedBlob;
+    }
+
+    private void applyMutation(INDArray weights) {
+        // Adjust this mutation rate based on your requirements
+        double mutationRate = 0.1;
+    
+        // Add small random values to the weights
+        weights.addi(Nd4j.rand(weights.shape()).subi(0.5).muli(mutationRate));
+    }
+
+    
+    
 
     // drawing the simulation
     @Override
