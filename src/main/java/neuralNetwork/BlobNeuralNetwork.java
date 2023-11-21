@@ -85,16 +85,30 @@ public class BlobNeuralNetwork {
     // Save and load methods remain the same
 
     public void saveModel(String path) {
+        String modelsFolderPath = "models/";
+        String fullPath = modelsFolderPath + path;
+    
         try {
-            model.save(new File(path), true);
+            // Create the "models" folder if it doesn't exist
+            File modelsFolder = new File(modelsFolderPath);
+            if (!modelsFolder.exists()) {
+                modelsFolder.mkdir();
+            }
+    
+            // Save the model in the "models" folder
+            model.save(new File(fullPath), true);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void loadModel(String path) {
+        String modelsFolderPath = "models/";
+        String fullPath = modelsFolderPath + path;
+    
         try {
-            model = MultiLayerNetwork.load(new File(path), true);
+            // Load the model from the "models" folder
+            model = MultiLayerNetwork.load(new File(fullPath), true);
         } catch (IOException e) {
             e.printStackTrace();
         }

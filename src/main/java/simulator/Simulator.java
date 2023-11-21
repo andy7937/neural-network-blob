@@ -1,5 +1,6 @@
 package simulator;
 
+import java.util.Iterator;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.io.BufferedWriter;
@@ -28,20 +29,23 @@ public class Simulator extends JPanel {
     public int numOfAliveBlobs = 0;
     public int numbOfFoodLeft = 0;
     public int numOfInputSensors = 15;
-    public int numOfHiddenNeurons = 10;
+    public int numOfHiddenNeurons = 20;
     public int numOfOutputNeurons = 6;
 
  
     // SETTINGS FOR THE SIMULATION
 
     // size of the map
-    int mapSize = 1080;
+    int mapSize = 800;
 
     // amount of simulations each generation
     public int maxSimulationSteps = 200;
 
     // amouunt of total generations
     public int maxGenerations = 1000;
+
+    // max amount of blobs at every generation
+    public int maxNumOfBlobs = 30;
 
     // amount of food for each generation
     public int foodAmount = 200;
@@ -50,7 +54,7 @@ public class Simulator extends JPanel {
     public int blobAmount = 30;
 
     // reproduction clone amount
-    public int spawnAmount = 1;
+    public int spawnAmount = 2;
 
     // 10 percent chance that each connection will be changed to a different weight
     public double mutationRate = 0.1;
@@ -142,7 +146,22 @@ public class Simulator extends JPanel {
     }
 
     private void updateBlobs() {
-        // Update blob positions, sensor data, etc.
+        // Collect indices to remove
+        List<Integer> indicesToRemove = new ArrayList<>();
+    
+        // Identify blobs to remove
+        for (int i = maxNumOfBlobs; i < blobs.size(); i++) {
+            indicesToRemove.add(random.nextInt(blobs.size()));
+        }
+    
+        // Remove marked blobs
+        List<Blob> blobsToRemove = new ArrayList<>();
+        for (int indexToRemove : indicesToRemove) {
+            blobsToRemove.add(blobs.get(indexToRemove));
+        }
+        blobs.removeAll(blobsToRemove);
+    
+        // Update remaining blobs
         for (Blob blob : blobs) {
             blob.update(foods, blobs);
         }
@@ -164,15 +183,17 @@ public class Simulator extends JPanel {
                 blob.position = point;
                 newBlobs.add(blob);
 
-                // if the blob survives spawn 3 clones with mutations
+                // if the blob survives spawn 2 clones with mutations
                 for (int i = 0; i < spawnAmount; i++){
                 Blob newBlob = cloneBlobWithMutation(blob);
                 newBlobs.add(newBlob);
                 }
             }
+            else{
+                numOfDeadBlobs++;
+            }
         }
-
-        numOfDeadBlobs = numOfStartingBlobs - numOfAliveBlobs;
+        numOfStartingBlobs = numOfAliveBlobs;
         // Clear existing blobs and add the new ones
         blobs.clear();
         blobs.addAll(newBlobs);

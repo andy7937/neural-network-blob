@@ -8,5 +8,6 @@ public class Main {
             Simulator simulator = Simulator.getInstance();
             simulator.runSimulation();
         });
+        
     }
 }
