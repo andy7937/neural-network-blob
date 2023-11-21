@@ -2,6 +2,9 @@ package simulator;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -15,32 +18,57 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class Simulator extends JPanel {
-    int mapSize = 1080;
+
     public List<Food> foods = new ArrayList<>();
     public List<Blob> blobs = new ArrayList<>();
     public int simulationStep = 0;
     public int currentGeneration = 0;
+    public int numOfStartingBlobs = 0;
+    public int numOfDeadBlobs = 0;
+    public int numOfAliveBlobs = 0;
+    public int numbOfFoodLeft = 0;
+    public int numOfInputSensors = 15;
+    public int numOfHiddenNeurons = 10;
+    public int numOfOutputNeurons = 6;
 
+ 
+    // SETTINGS FOR THE SIMULATION
+
+    // size of the map
+    int mapSize = 1080;
 
     // amount of simulations each generation
-    public int maxSimulationSteps = 300;
+    public int maxSimulationSteps = 200;
 
     // amouunt of total generations
-    public int maxGenerations = 100;
+    public int maxGenerations = 1000;
 
     // amount of food for each generation
-    public int foodAmount = 100;
+    public int foodAmount = 200;
 
     // initial blob amount
-    public int blobAmount = 20;
+    public int blobAmount = 30;
 
     // reproduction clone amount
-    public int spawnAmount = 3;
+    public int spawnAmount = 1;
 
     // 10 percent chance that each connection will be changed to a different weight
     public double mutationRate = 0.1;
+
+    // how much the mutation will change the weight by (will be negative or positive)
+    public int mutationChangeAmount = 10;
+
+    // how random the mutation will be. Min range will be how low it can be multipled by decreasing the mutation amount
+    // Max range will be how high it can be multipled by increasing the mutation amount. For example, if minRange is 0 and
+    // maxRange is 2, the mutation amount will be between 0 and double the mutation amount. Keep both at 1 if you don't 
+    // want to change the mutation amount
+    public double minRange = 0.99;
+    public double maxRange = 1;
+
     private static Simulator instance;
     private BlobNeuralNetwork blobNetwork;
+    Random random = new Random(System.currentTimeMillis());
+
 
     private Simulator() {
         initializeSimulation();
@@ -55,12 +83,19 @@ public class Simulator extends JPanel {
 
     private void initializeSimulation() {
         createNewFood();
+        clearStatistics();
+        numOfStartingBlobs = blobAmount;
+        numbOfFoodLeft = foodAmount;
 
-        Random random = new Random();
+        Blob.mapSize = mapSize;
+        Blob.numOfInputSensors = numOfInputSensors;
+        Blob.numOfHiddenNeurons = numOfHiddenNeurons;
+        Blob.numOfOutputNeurons = numOfOutputNeurons;
+        
     
         // Create blobs with associated neural networks
         for (int i = 0; i < blobAmount; i++) {
-            BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(15, 4, 6);
+            BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(numOfInputSensors, numOfHiddenNeurons, numOfOutputNeurons);
             Blob blob = new Blob(new Point(random.nextInt(mapSize), random.nextInt(mapSize)), randomNetwork);
     
             blobs.add(blob);
@@ -83,6 +118,7 @@ public class Simulator extends JPanel {
 
         if (simulationStep >= maxSimulationSteps) {
             // At the end of each generation
+            numbOfFoodLeft = foods.size();
             createNewFood();
             if (currentGeneration < maxGenerations - 1) {
                 // Save the trained model for the current generation
@@ -94,9 +130,11 @@ public class Simulator extends JPanel {
                 
                 // Reset simulation step
                 simulationStep = 0;
+                saveStatistics();
                 currentGeneration++;
             } else {
                 // Save the final model and terminate the simulation
+                saveStatistics();
                 blobNetwork.saveModel("final_trained_blob_model.zip");
                 System.exit(0);
             }
@@ -115,13 +153,12 @@ public class Simulator extends JPanel {
         List<Blob> newBlobs = new ArrayList<>();
 
         // create new points
-        Random random = new Random();
         Point point = new Point(random.nextInt(), random.nextInt());
     
         // Create new blobs for the next generation
         for (Blob blob : blobs) {
             if (blob.hasEaten()) {
-
+                numOfAliveBlobs++;
                 // creating the original blob and putting it back into the next generation
                 blob.hasEaten = false;
                 blob.position = point;
@@ -132,10 +169,10 @@ public class Simulator extends JPanel {
                 Blob newBlob = cloneBlobWithMutation(blob);
                 newBlobs.add(newBlob);
                 }
-
             }
         }
-    
+
+        numOfDeadBlobs = numOfStartingBlobs - numOfAliveBlobs;
         // Clear existing blobs and add the new ones
         blobs.clear();
         blobs.addAll(newBlobs);
@@ -143,7 +180,6 @@ public class Simulator extends JPanel {
 
     private Blob cloneBlobWithMutation(Blob originalBlob) {
         // Create a new blob as a clone of the original
-        Random random = new Random();
         Point Point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
         Blob clonedBlob = new Blob(Point, null);
         
@@ -163,11 +199,12 @@ public class Simulator extends JPanel {
 
     private void applyMutation(INDArray weights) {
         // Add small random values to the weights
-        weights.addi(Nd4j.rand(weights.shape()).subi(0.5).muli(mutationRate));
+
+        mutationChangeAmount *= random.nextDouble(minRange, maxRange);
+        weights.addi(Nd4j.rand(weights.shape()).subi(mutationChangeAmount).muli(mutationRate));
     }
 
     private void createNewFood(){
-        Random random = new Random();
 
         foods.clear();
     
@@ -177,8 +214,39 @@ public class Simulator extends JPanel {
         }
     }
 
+    // save the statistics of the simulation
+    private void saveStatistics() {
+        String filename = "generation_statistics.txt";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename, true))) {
+            writer.write("Generation: " + currentGeneration + "\n");
+            writer.write("Num of Starting Blobs: " + numOfStartingBlobs + "\n");
+            writer.write("Num of Dead Blobs: " + numOfDeadBlobs + "\n");
+            writer.write("Num of Alive Blobs: " + numOfAliveBlobs + "\n");
+            writer.write("Num of Food Left: " + numbOfFoodLeft + "\n");
+            writer.write("\n");
+
+            // Reset statistics for the next generation
+            numOfDeadBlobs = 0;
+            numOfAliveBlobs = 0;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // clear the statistics of the simulation
+    private void clearStatistics() {
+        String filename = "generation_statistics.txt";
     
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            // The file is opened without the 'true' parameter, so it will be cleared
     
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     // drawing the simulation
     @Override
@@ -198,7 +266,7 @@ public class Simulator extends JPanel {
             else{
                 g.setColor(Color.GREEN);
             }
-            g.fillRect(blob.position.x, blob.position.y, 20, 20);
+            g.fillRect(blob.position.x, blob.position.y, 10, 10);
         }
     }
 
@@ -206,7 +274,7 @@ public class Simulator extends JPanel {
         // drawing foods
         for (Food food : foods) {
             g.setColor(Color.RED);
-            g.fillRect(food.position.x, food.position.y, 10, 10);
+            g.fillRect(food.position.x, food.position.y, 5, 5);
         }
     }
 

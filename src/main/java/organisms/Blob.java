@@ -14,8 +14,12 @@ public class Blob {
 
     public Point position;
     public BlobNeuralNetwork neuralNetwork;
-    public int mapSize = 1080;
+    public static int mapSize;
     public boolean hasEaten = false;
+    public static int numOfInputSensors;
+    public static int numOfHiddenNeurons;
+    public static int numOfOutputNeurons;
+
 
     public Blob(Point position, BlobNeuralNetwork neuralNetwork) {
         this.position = position;
@@ -117,10 +121,9 @@ public class Blob {
 
     public INDArray generateOutputVector(List<Food> foods, List<Blob> blobs, INDArray input) {
         // Assuming numOutputs is the number of classes in your classification task
-        int numOutputs = 6; // Adjust this based on your actual number of output classes
         
         // Initialize the output vector with zeros
-        INDArray outputVector = Nd4j.zeros(1, numOutputs);
+        INDArray outputVector = Nd4j.zeros(1, numOfOutputNeurons);
     
         // Get the raw output from the neural network
         INDArray rawOutput = neuralNetwork.predict(input);
@@ -148,11 +151,10 @@ public class Blob {
         // 12. Distance from nearest food
         // 13. Distance from nearest blob
         // 14. Food adjacent to the blob
-    
-        int numSensors = 15; // Number of sensors
+
     
         // Initialize the input vector with zeros
-        INDArray inputVector = Nd4j.zeros(1, numSensors);
+        INDArray inputVector = Nd4j.zeros(1, numOfInputSensors);
     
         // Sensing range for food and blobs
         int sensingRange = 300;
@@ -235,7 +237,7 @@ public class Blob {
         Iterator<Food> iterator = foods.iterator();
         while (iterator.hasNext()) {
             Food food = iterator.next();
-            if (isAdjacent(food.position, 10)) {
+            if (isAdjacent(food.position, 5)) {
                 hasEaten = true;
                 iterator.remove(); // Use iterator to safely remove the food
             }

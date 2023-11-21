@@ -23,8 +23,10 @@ public class BlobNeuralNetwork {
 
         Random random = new Random(System.currentTimeMillis());
         int i = random.nextInt(100000000);
+        int j = random.nextInt(100000000);
+
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(123 + i)
+                .seed(i + j + 5)
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Adam(0.1))
                 .list()
