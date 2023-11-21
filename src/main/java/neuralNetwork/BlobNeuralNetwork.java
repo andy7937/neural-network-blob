@@ -45,6 +45,7 @@ public class BlobNeuralNetwork {
         this.model = new MultiLayerNetwork(conf);
         this.model.init();
     }
+    
     // Train the neural network with a single step of simulation data
     public INDArray trainStep(INDArray input, INDArray target) {
         model.fit(input, target);

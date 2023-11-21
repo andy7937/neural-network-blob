@@ -1,6 +1,5 @@
 package simulator;
 
-import java.util.Iterator;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.io.BufferedWriter;
@@ -25,6 +24,7 @@ public class Simulator extends JPanel {
     public int simulationStep = 0;
     public int currentGeneration = 0;
     public int numOfStartingBlobs = 0;
+    public double survivalRate = 0;
     public int numOfDeadBlobs = 0;
     public int numOfAliveBlobs = 0;
     public int numbOfFoodLeft = 0;
@@ -45,22 +45,29 @@ public class Simulator extends JPanel {
     public int maxGenerations = 1000;
 
     // max amount of blobs at every generation
-    public int maxNumOfBlobs = 30;
+    public int maxNumOfBlobs = 100;
 
     // amount of food for each generation
     public int foodAmount = 200;
 
     // initial blob amount
-    public int blobAmount = 30;
+    public int blobAmount = 100;
 
-    // reproduction clone amount
-    public int spawnAmount = 2;
+    // reproduction of survived original blob
+    public int originalSpawnAmount = 2;
+
+    // reproduction of clone amount of original blob
+    public int cloneSpawnAmount = 2;
 
     // 10 percent chance that each connection will be changed to a different weight
     public double mutationRate = 0.1;
 
     // how much the mutation will change the weight by (will be negative or positive)
     public int mutationChangeAmount = 10;
+
+    // sensing range of the blobs
+    public int sensingRange = 300;
+
 
     // how random the mutation will be. Min range will be how low it can be multipled by decreasing the mutation amount
     // Max range will be how high it can be multipled by increasing the mutation amount. For example, if minRange is 0 and
@@ -95,6 +102,7 @@ public class Simulator extends JPanel {
         Blob.numOfInputSensors = numOfInputSensors;
         Blob.numOfHiddenNeurons = numOfHiddenNeurons;
         Blob.numOfOutputNeurons = numOfOutputNeurons;
+        Blob.sensingRange = sensingRange;
         
     
         // Create blobs with associated neural networks
@@ -109,8 +117,6 @@ public class Simulator extends JPanel {
                 blobNetwork = randomNetwork;
             }
         }
-    
-        runSimulation();
     }
 
     // updating simulation for each step
@@ -145,6 +151,7 @@ public class Simulator extends JPanel {
         }
     }
 
+    // updating the blobs while also removing blobs so that the max amount of blobs is not exceeded
     private void updateBlobs() {
         // Collect indices to remove
         List<Integer> indicesToRemove = new ArrayList<>();
@@ -181,20 +188,20 @@ public class Simulator extends JPanel {
                 // creating the original blob and putting it back into the next generation
                 blob.hasEaten = false;
                 blob.position = point;
-                newBlobs.add(blob);
 
-                // if the blob survives spawn 2 clones with mutations
-                for (int i = 0; i < spawnAmount; i++){
+                for (int i = 0; i < originalSpawnAmount; i++){
+                    newBlobs.add(blob);
+                }
+                // if the blob survives spawn 1 clones with mutations
+                for (int i = 0; i < cloneSpawnAmount; i++){
                 Blob newBlob = cloneBlobWithMutation(blob);
                 newBlobs.add(newBlob);
                 }
             }
-            else{
-                numOfDeadBlobs++;
-            }
         }
-        numOfStartingBlobs = numOfAliveBlobs;
         // Clear existing blobs and add the new ones
+        numOfDeadBlobs = numOfStartingBlobs - numOfAliveBlobs;
+        survivalRate = (double)numOfAliveBlobs / (double)numOfStartingBlobs;
         blobs.clear();
         blobs.addAll(newBlobs);
     }
@@ -245,9 +252,11 @@ public class Simulator extends JPanel {
             writer.write("Num of Dead Blobs: " + numOfDeadBlobs + "\n");
             writer.write("Num of Alive Blobs: " + numOfAliveBlobs + "\n");
             writer.write("Num of Food Left: " + numbOfFoodLeft + "\n");
+            writer.write("Survival Rate: " + survivalRate + "\n");
             writer.write("\n");
 
             // Reset statistics for the next generation
+            numOfStartingBlobs = numOfAliveBlobs;
             numOfDeadBlobs = 0;
             numOfAliveBlobs = 0;
 
