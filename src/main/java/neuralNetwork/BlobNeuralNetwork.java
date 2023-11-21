@@ -15,16 +15,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-
-
 public class BlobNeuralNetwork {
 
     private MultiLayerNetwork model;
 
     public BlobNeuralNetwork(int numInputs, int numHiddenNeurons, int numOutputs) {
 
-        Random random = new Random();
-        int i = random.nextInt(1000);
+        Random random = new Random(System.currentTimeMillis());
+        int i = random.nextInt(100000000);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123 + i)
                 .weightInit(WeightInit.XAVIER)
@@ -68,7 +66,7 @@ public class BlobNeuralNetwork {
             MultiLayerNetwork clonedModel = model.clone();
 
             // Create a new BlobNeuralNetwork and set the cloned model
-            BlobNeuralNetwork clonedNetwork = new BlobNeuralNetwork(15, 4, 5); // Adjust the parameters as needed
+            BlobNeuralNetwork clonedNetwork = new BlobNeuralNetwork(15, 4, 6); // Adjust the parameters as needed
             clonedNetwork.setModel(clonedModel);
 
             return clonedNetwork;

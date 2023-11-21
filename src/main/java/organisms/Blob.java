@@ -30,12 +30,10 @@ public class Blob {
             // Generate target data based on the desired behavior (not implemented in this example)
             INDArray target = blob.generateOutputVector(foods, blobs, input);
 
-            // Train the neural network with the current simulation step
-            INDArray output = neuralNetwork.trainStep(input, target);
-
-            // Use the output to influence the movement or behavior of the blob
-            updateBlobPosition(output);
+            blob.updateBlobPosition(target);
         }
+
+
 
         checkForFoodEating(foods);
     }
@@ -237,7 +235,7 @@ public class Blob {
         Iterator<Food> iterator = foods.iterator();
         while (iterator.hasNext()) {
             Food food = iterator.next();
-            if (isAdjacent(food.position, 1)) {
+            if (isAdjacent(food.position, 10)) {
                 hasEaten = true;
                 iterator.remove(); // Use iterator to safely remove the food
             }

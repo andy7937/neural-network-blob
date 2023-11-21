@@ -3,7 +3,6 @@ package simulator;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import javax.swing.JFrame;
@@ -12,7 +11,6 @@ import javax.swing.Timer;
 import organisms.Blob;
 import organisms.Food;
 import neuralNetwork.BlobNeuralNetwork;
-import simulator.Point;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -21,9 +19,26 @@ public class Simulator extends JPanel {
     public List<Food> foods = new ArrayList<>();
     public List<Blob> blobs = new ArrayList<>();
     public int simulationStep = 0;
-    public int maxSimulationSteps = 100;
     public int currentGeneration = 0;
+
+
+    // amount of simulations each generation
+    public int maxSimulationSteps = 300;
+
+    // amouunt of total generations
     public int maxGenerations = 100;
+
+    // amount of food for each generation
+    public int foodAmount = 100;
+
+    // initial blob amount
+    public int blobAmount = 20;
+
+    // reproduction clone amount
+    public int spawnAmount = 3;
+
+    // 10 percent chance that each connection will be changed to a different weight
+    public double mutationRate = 0.1;
     private static Simulator instance;
     private BlobNeuralNetwork blobNetwork;
 
@@ -39,21 +54,23 @@ public class Simulator extends JPanel {
     }
 
     private void initializeSimulation() {
+        createNewFood();
+
         Random random = new Random();
-
-        // adding foods
-        for (int i = 0; i < 100; i++) {
-            foods.add(new Food(new Point(random.nextInt(mapSize), random.nextInt(mapSize))));
-        }
-
+    
         // Create blobs with associated neural networks
-        for (int i = 0; i < 20; i++) {
-            BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(15, 4, 5);
+        for (int i = 0; i < blobAmount; i++) {
+            BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(15, 4, 6);
             Blob blob = new Blob(new Point(random.nextInt(mapSize), random.nextInt(mapSize)), randomNetwork);
     
             blobs.add(blob);
+    
+            // Set the first neural network as the main blobNetwork
+            if (i == 0) {
+                blobNetwork = randomNetwork;
+            }
         }
-
+    
         runSimulation();
     }
 
@@ -63,14 +80,14 @@ public class Simulator extends JPanel {
 
         simulationStep++;
         System.out.println("Simulation step: " + simulationStep);
-        for (Blob blob: blobs) {
-            System.out.println("Initial Weights: " + blob.neuralNetwork.getOutputWeights());        }
 
         if (simulationStep >= maxSimulationSteps) {
             // At the end of each generation
+            createNewFood();
             if (currentGeneration < maxGenerations - 1) {
                 // Save the trained model for the current generation
                 blobNetwork.saveModel("trained_blob_model_generation_" + currentGeneration + ".zip");
+                System.out.println("Generation step: " + currentGeneration);
                 
                 // Create a new generation of blobs
                 createNewGeneration();
@@ -96,19 +113,29 @@ public class Simulator extends JPanel {
     private void createNewGeneration() {
         // Create a new list for the next generation
         List<Blob> newBlobs = new ArrayList<>();
-        
+
+        // create new points
+        Random random = new Random();
+        Point point = new Point(random.nextInt(), random.nextInt());
+    
         // Create new blobs for the next generation
         for (Blob blob : blobs) {
             if (blob.hasEaten()) {
 
+                // creating the original blob and putting it back into the next generation
+                blob.hasEaten = false;
+                blob.position = point;
+                newBlobs.add(blob);
+
+                // if the blob survives spawn 3 clones with mutations
+                for (int i = 0; i < spawnAmount; i++){
                 Blob newBlob = cloneBlobWithMutation(blob);
                 newBlobs.add(newBlob);
+                }
 
-            } else {
-                blobs.remove(blob);
             }
         }
-        
+    
         // Clear existing blobs and add the new ones
         blobs.clear();
         blobs.addAll(newBlobs);
@@ -129,16 +156,25 @@ public class Simulator extends JPanel {
         
         // Set the cloned neural network to the new blob
         clonedBlob.neuralNetwork = clonedNN;
+        clonedBlob.hasEaten = false;
         
         return clonedBlob;
     }
 
     private void applyMutation(INDArray weights) {
-        // Adjust this mutation rate based on your requirements
-        double mutationRate = 0.1;
-    
         // Add small random values to the weights
         weights.addi(Nd4j.rand(weights.shape()).subi(0.5).muli(mutationRate));
+    }
+
+    private void createNewFood(){
+        Random random = new Random();
+
+        foods.clear();
+    
+        // adding foods
+        for (int i = 0; i < foodAmount; i++) {
+            foods.add(new Food(new Point(random.nextInt(mapSize), random.nextInt(mapSize))));
+        }
     }
 
     
@@ -148,14 +184,20 @@ public class Simulator extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        drawBlobs(g);
         drawFoods(g);
+        drawBlobs(g);
     }
 
     private void drawBlobs(Graphics g) {
         // drawing blobs
         for (Blob blob : blobs) {
-            g.setColor(Color.GREEN);
+
+            if (blob.hasEaten() == true){
+                g.setColor(Color.BLUE);
+            }
+            else{
+                g.setColor(Color.GREEN);
+            }
             g.fillRect(blob.position.x, blob.position.y, 20, 20);
         }
     }
