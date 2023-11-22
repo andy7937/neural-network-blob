@@ -23,18 +23,25 @@ public class BlobNeuralNetwork {
     public static int numOutputs;
 
     public BlobNeuralNetwork(int numInputs, int numHiddenNeurons, int numOutputs) {
-
         Random random = new Random(System.currentTimeMillis());
         int i = random.nextInt(100000000);
         int j = random.nextInt(100000000);
-
+    
+        // Randomize the learning rate during initialization
+        double learningRate = random.nextDouble() * 0.2; // You can adjust the range as needed
+    
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(i + j + 5)
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Adam(0.1))
+                .updater(new Adam(learningRate)) // Use the randomized learning rate
                 .list()
                 .layer(new DenseLayer.Builder()
                         .nIn(numInputs)
+                        .nOut(numHiddenNeurons)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(new DenseLayer.Builder()
+                        .nIn(numHiddenNeurons)
                         .nOut(numHiddenNeurons)
                         .activation(Activation.RELU)
                         .build())
@@ -53,7 +60,6 @@ public class BlobNeuralNetwork {
         this.model = new MultiLayerNetwork(conf);
         this.model.init();
     }
-
     
     // Train the neural network with a single step of simulation data
     public INDArray trainStep(INDArray input, INDArray target) {
@@ -74,7 +80,7 @@ public class BlobNeuralNetwork {
 
     // Get the weights of the output layer
     public INDArray getOutputWeights() {
-        return model.getLayer(2).getParam("W");
+        return model.getLayer(3).getParam("W");
     }
 
     public BlobNeuralNetwork clone() {

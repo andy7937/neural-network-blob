@@ -28,11 +28,11 @@ public class Simulator extends JPanel {
     public int numOfDeadBlobs = 0;
     public int numOfAliveBlobs = 0;
     public int numbOfFoodLeft = 0;
-    public int numOfInputSensors = 16;
+    public int numOfInputSensors = 25;
 
     // good start for number of inner neurons is number of input neurons + number of output neurons / 2
-    public int numOfHiddenNeurons = 13;
-    public int numOfOutputNeurons = 10;
+    public int numOfHiddenNeurons = 18;
+    public int numOfOutputNeurons = 11;
 
  
     // SETTINGS FOR THE SIMULATION
@@ -44,39 +44,39 @@ public class Simulator extends JPanel {
     int mapSize = 800;
 
     // amount of simulations each generationcvf
-    public int maxSimulationSteps = 70;
+    public int maxSimulationSteps = 100;
 
     // amouunt of total generations
     public int maxGenerations = 100000;
 
     // max amount of blobs at every generation
-    public int maxNumOfBlobs = 40;
+    public int maxNumOfBlobs = 50;
 
     // amount of food for each generation
-    public int foodAmount = 200;
+    public int foodAmount = 50;
 
     // initial blob amount
-    public int blobAmount = 40;
+    public int blobAmount = 20;
 
     // reproduction of clone amount of original blob
-    public int cloneSpawnAmount = 2;
+    public int cloneSpawnAmount = 1;
 
     // 10 percent chance that each connection will be changed to a different weight
     public double mutationRate = 0.1;
 
     // how much the mutation will change the weight by (will be negative or positive)
-    public int mutationChangeAmount = 30;
+    public int mutationChangeAmount = 10;
 
     // sensing range of the blobs
-    public int sensingRange = 1000;
+    public int sensingRange = 300;
 
 
     // how random the mutation will be. Min range will be how low it can be multipled by decreasing the mutation amount
     // Max range will be how high it can be multipled by increasing the mutation amount. For example, if minRange is 0 and
     // maxRange is 2, the mutation amount will be between 0 and double the mutation amount. Keep both at 1 if you don't 
     // want to change the mutation amount
-    public double minRange = 0.99;
-    public double maxRange = 1;
+    public double minRange = 0;
+    public double maxRange = 0.75;
 
     private static Simulator instance;
     private BlobNeuralNetwork blobNetwork;
@@ -130,14 +130,19 @@ public class Simulator extends JPanel {
     private void updateSimulation() {
         updateBlobs();
 
-        // testing adds a blob if there are no blobs left in the simulation allowing for continual training even if all blobs die
-        if (blobs.size() <= 0){
+
+
+        // TESTING add new random blobs to match the max amount for continual simulation
+        if (blobs.size() < blobAmount){
+
+            for (int i = 0; i < blobAmount - blobs.size(); i++){
             BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(numOfInputSensors, numOfHiddenNeurons, numOfOutputNeurons);
             Blob blob = new Blob(new Point(random.nextInt(mapSize), random.nextInt(mapSize)), randomNetwork);
             blobs.add(blob);
-
-            blobNetwork = randomNetwork;
+            }
         }
+
+
         simulationStep++;
         System.out.println("Simulation step: " + simulationStep);
 
@@ -192,34 +197,36 @@ public class Simulator extends JPanel {
     private void createNewGeneration() {
         // Create a new list for the next generation
         List<Blob> newBlobs = new ArrayList<>();
-
-        // create new points
-        Point point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
     
         // Create new blobs for the next generation
-        for (Blob blob : blobs) {
-            if (blob.getEatenAmount() > 0) {
+        for (Blob originalBlob : blobs) {
+            if (originalBlob.getEatenAmount() > 0) {
                 numOfAliveBlobs++;
                 // creating the original blob and putting it back into the next generation
-                blob.eatenAmount = 0;
-                blob.position = point;
-
+                Point point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
+                originalBlob.position = point;
+                int temp = originalBlob.eatenAmount;
+                originalBlob.eatenAmount = 0;
+    
                 // if the blob has eaten, spawn clones of the original blob with the amount of food it has eaten
-                for (int i = 0; i < blob.eatenAmount + 1; i++){
+                for (int i = 0; i < temp + 1; i++) {
                     point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
-                    blob.position = point;
-                    newBlobs.add(blob);
+                    BlobNeuralNetwork blobNetwork = originalBlob.neuralNetwork;
+                    Blob clonedBlob = new Blob(point, blobNetwork);
+                    newBlobs.add(clonedBlob);
                 }
-                // if the blob survives spawn clones with mutations
-                for (int i = 0; i < cloneSpawnAmount; i++){
-                    Blob newBlob = cloneBlobWithMutation(blob);
+    
+                // if the blob survives, spawn clones with mutations
+                for (int i = 0; i < cloneSpawnAmount; i++) {
+                    Blob newBlob = cloneBlobWithMutation(originalBlob);
                     newBlobs.add(newBlob);
                 }
             }
         }
+    
         // Clear existing blobs and add the new ones
         numOfDeadBlobs = numOfStartingBlobs - numOfAliveBlobs;
-        survivalRate = (double)numOfAliveBlobs / (double)numOfStartingBlobs;
+        survivalRate = (double) numOfAliveBlobs / (double) numOfStartingBlobs;
         blobs.clear();
         blobs.addAll(newBlobs);
     }
@@ -250,6 +257,7 @@ public class Simulator extends JPanel {
         weights.addi(Nd4j.rand(weights.shape()).subi(mutationChangeAmount).muli(mutationRate));
     }
 
+    //TODO
     public BlobNeuralNetwork crossOver(BlobNeuralNetwork male, BlobNeuralNetwork female){
         return null;
     }
@@ -260,7 +268,7 @@ public class Simulator extends JPanel {
     
         // adding foods (can also change this to be the condition for blob to survive)
         for (int i = 0; i < foodAmount; i++) {
-            foods.add(new Food(new Point(random.nextInt(mapSize), random.nextInt(mapSize - 50, mapSize))));
+            foods.add(new Food(new Point(random.nextInt(mapSize), random.nextInt(mapSize))));
         }
 
     }

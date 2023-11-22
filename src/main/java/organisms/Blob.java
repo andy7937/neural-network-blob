@@ -1,9 +1,7 @@
 package organisms;
-import java.awt.Color;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -22,6 +20,7 @@ public class Blob {
     public static int numOfOutputNeurons;
     public static int sensingRange;
     public static int blobSize;
+    public int lastActionTaken = 10;
     public Random random = new Random(System.currentTimeMillis());
 
 
@@ -52,12 +51,13 @@ public class Blob {
         // 1. Move right
         // 2. Move up
         // 3. Move down
-        // 4. Move up left
-        // 5. Move up right
-        // 6. Move down left
-        // 7. Move down right
+        // 4. Move top left
+        // 5. Move top right
+        // 6. Move bottom left
+        // 7. Move bottom right
         // 8. Eat everything adjacent
         // 9. Random Movement    
+        // 10. Do nothing
         int numOutputs = output.columns();
     
         // Find the index with the maximum value in the output vector
@@ -70,10 +70,10 @@ public class Blob {
                 maxIndex = i;
             }
         }
+        lastActionTaken = maxIndex;
         // Update the blob's position based on the identified action or direction
         if (maxIndex >= 0 && maxIndex < 8){
             moveInAdjacentDirection(maxIndex);
-
         }
 
     switch (maxIndex) {
@@ -85,6 +85,7 @@ public class Blob {
             // Random Movement
             int randomDirection = random.nextInt(8);
             moveInAdjacentDirection(randomDirection);
+            break;
         }
 
         // make sure the blob stays within the map which is 1080x1080
@@ -135,10 +136,35 @@ public class Blob {
         // 13. Distance from nearest blob
         // 14. Food adjacent to the blob
         // 15. Blob adjacent to the blob
+        // 16. Density of food in top right
+        // 17. Density of food in top left
+        // 18. Density of food in bottom right
+        // 19. Density of food in bottom left
+        // 20. Density of blob in top right
+        // 21. Density of blob in top left
+        // 22. Density of blob in bottom right
+        // 23. Density of blob in bottom left
+        // 24. Last action taken
+
 
     
         // Initialize the input vector with zeros
         INDArray inputVector = Nd4j.zeros(1, numOfInputSensors);
+
+        // Initialize the food density variables
+        int trFoodDensity = 0;
+        int tlFoodDensity = 0;
+        int brFoodDensity = 0;
+        int blFoodDensity = 0;
+
+        // Initialize the blob density variables
+        int trBlobDensity = 0;
+        int tlBlobDensity = 0;
+        int brBlobDensity = 0;
+        int blBlobDensity = 0;
+
+        // Calculate the normalization factor for the density
+        double normalizationFactor = 1.0 / sensingRange;
     
         // Iterate over all foods and blobs to populate the input vector
         for (Food food : foods) {
@@ -172,6 +198,31 @@ public class Blob {
                     // Apply dynamic weight to the input vector at index 12
                     inputVector.putScalar(12, currentDistance * dynamicWeight);
                 }
+
+                // Calculating density of food in top right, top left, bottom right, bottom left
+                // Top right
+                if (food.position.x > position.x && food.position.y < position.y && food.position.x - position.x <= sensingRange && position.y - food.position.y <= sensingRange) {
+                    trFoodDensity++;
+                }
+                // Top left
+                if (food.position.x < position.x && food.position.y < position.y && position.x - food.position.x <= sensingRange && position.y - food.position.y <= sensingRange) {
+                    tlFoodDensity++;
+                }
+                // Bottom right
+                if (food.position.x > position.x && food.position.y > position.y && food.position.x - position.x <= sensingRange && food.position.y - position.y <= sensingRange) {
+                    brFoodDensity++;
+                }
+                // Bottom left
+                if (food.position.x < position.x && food.position.y > position.y && position.x - food.position.x <= sensingRange && food.position.y - position.y <= sensingRange) {
+                    blFoodDensity++;
+                }
+
+                // Apply density to the input vector at index 16, 17, 18, 19
+                inputVector.putScalar(16, trFoodDensity * normalizationFactor);
+                inputVector.putScalar(17, tlFoodDensity * normalizationFactor);
+                inputVector.putScalar(18, brFoodDensity * normalizationFactor);
+                inputVector.putScalar(19, blFoodDensity * normalizationFactor);
+
             }
 
             // Food adjacent to the blob make sure it is radius of blob
@@ -213,6 +264,31 @@ public class Blob {
                 if (distance(position, blob.position) <= blobSize * 2) {
                     inputVector.putScalar(15, 1.0);
                 }
+
+                // Calculating density of blob in top right, top left, bottom right, bottom left
+                // Top right
+                if (blob.position.x > position.x && blob.position.y < position.y && blob.position.x - position.x <= sensingRange && position.y - blob.position.y <= sensingRange) {
+                    trBlobDensity++;
+                }
+                // Top left
+                if (blob.position.x < position.x && blob.position.y < position.y && position.x - blob.position.x <= sensingRange && position.y - blob.position.y <= sensingRange) {
+                    tlBlobDensity++;
+                }
+                // Bottom right
+                if (blob.position.x > position.x && blob.position.y > position.y && blob.position.x - position.x <= sensingRange && blob.position.y - position.y <= sensingRange) {
+                    brBlobDensity++;
+                }
+                // Bottom left
+                if (blob.position.x < position.x && blob.position.y > position.y && position.x - blob.position.x <= sensingRange && blob.position.y - position.y <= sensingRange) {
+                    blBlobDensity++;
+                }
+
+                // Apply density to the input vector at index 20, 21, 22, 23
+                inputVector.putScalar(20, trBlobDensity * normalizationFactor);
+                inputVector.putScalar(21, tlBlobDensity * normalizationFactor);
+                inputVector.putScalar(22, brBlobDensity * normalizationFactor);
+                inputVector.putScalar(23, blBlobDensity * normalizationFactor);
+
             }
 
         }
@@ -222,6 +298,9 @@ public class Blob {
         inputVector.putScalar(9, mapSize - position.y); // Distance from South Border
         inputVector.putScalar(10, mapSize - position.x); // Distance from East Border
         inputVector.putScalar(11, position.x); // Distance from West Border
+
+        // Last action taken
+        inputVector.putScalar(24, lastActionTaken);
     
         return inputVector;
     }
@@ -319,11 +398,11 @@ public class Blob {
     }
 
     private double calculateDynamicWeight(double distance) {
-        // Parameters for the Gaussian function
-        double sigma = 500.0; // Half of radius
-        double mu = 0.0; // Center of the Gaussian function should be position of the blob
+        // Parameters for the modified Gaussian function
+        double sigma = 0.5; // Adjust this value to control sensitivity
+        double mu = 0.0;   // Center of the Gaussian function should be position of the blob
     
-        // Gaussian function
+        // Modified Gaussian function
         double exponent = -Math.pow(distance - mu, 2) / (2 * Math.pow(sigma, 2));
         double dynamicWeight = Math.exp(exponent);
     
