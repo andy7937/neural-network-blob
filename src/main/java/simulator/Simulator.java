@@ -44,19 +44,19 @@ public class Simulator extends JPanel {
     int mapSize = 800;
 
     // amount of simulations each generationcvf
-    public int maxSimulationSteps = 100;
+    public int maxSimulationSteps = 50;
 
     // amouunt of total generations
     public int maxGenerations = 100000;
 
     // max amount of blobs at every generation
-    public int maxNumOfBlobs = 50;
+    public int maxNumOfBlobs = 30;
 
     // amount of food for each generation
     public int foodAmount = 50;
 
     // initial blob amount
-    public int blobAmount = 20;
+    public int blobAmount = 10;
 
     // reproduction of clone amount of original blob
     public int cloneSpawnAmount = 1;
@@ -95,7 +95,9 @@ public class Simulator extends JPanel {
     }
 
     private void initializeSimulation() {
-        createNewFood();
+
+
+        // createNewFood();
         clearStatistics();
         numOfStartingBlobs = blobAmount;
         numbOfFoodLeft = foodAmount;
@@ -133,14 +135,14 @@ public class Simulator extends JPanel {
 
 
         // TESTING add new random blobs to match the max amount for continual simulation
-        if (blobs.size() < blobAmount){
+        // if (blobs.size() < blobAmount){
 
-            for (int i = 0; i < blobAmount - blobs.size(); i++){
-            BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(numOfInputSensors, numOfHiddenNeurons, numOfOutputNeurons);
-            Blob blob = new Blob(new Point(random.nextInt(mapSize), random.nextInt(mapSize)), randomNetwork);
-            blobs.add(blob);
-            }
-        }
+        //     for (int i = 0; i < blobAmount - blobs.size(); i++){
+        //     BlobNeuralNetwork randomNetwork = new BlobNeuralNetwork(numOfInputSensors, numOfHiddenNeurons, numOfOutputNeurons);
+        //     Blob blob = new Blob(new Point(random.nextInt(mapSize), random.nextInt(mapSize)), randomNetwork);
+        //     blobs.add(blob);
+        //     }
+        // }
 
 
         simulationStep++;
@@ -149,7 +151,9 @@ public class Simulator extends JPanel {
         if (simulationStep >= maxSimulationSteps) {
             // At the end of each generation
             numbOfFoodLeft = foods.size();
-            createNewFood();
+            
+            // TURN THIS ON/OFF DEPENDING ON SUCCESS CONDITION OF SIMULATION
+            //createNewFood();
             if (currentGeneration < maxGenerations - 1) {
                 // Save the trained model for the current generation
                 blobNetwork.saveModel("trained_blob_model_generation_" + currentGeneration + ".zip");
@@ -200,16 +204,19 @@ public class Simulator extends JPanel {
     
         // Create new blobs for the next generation
         for (Blob originalBlob : blobs) {
-            if (originalBlob.getEatenAmount() > 0) {
-                numOfAliveBlobs++;
+
+            // USE FOR TESTING AREA SUCCESS CONDITION
+            // if the blob is on the left side of the map
+            int leftSuccess = mapSize/4;
+            if (originalBlob.position.x < leftSuccess){
+
+                 numOfAliveBlobs++;
                 // creating the original blob and putting it back into the next generation
                 Point point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
                 originalBlob.position = point;
-                int temp = originalBlob.eatenAmount;
-                originalBlob.eatenAmount = 0;
     
-                // if the blob has eaten, spawn clones of the original blob with the amount of food it has eaten
-                for (int i = 0; i < temp + 1; i++) {
+                // how many original blobs are cloned
+                for (int i = 0; i < 2; i++) {
                     point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
                     BlobNeuralNetwork blobNetwork = originalBlob.neuralNetwork;
                     Blob clonedBlob = new Blob(point, blobNetwork);
@@ -221,7 +228,36 @@ public class Simulator extends JPanel {
                     Blob newBlob = cloneBlobWithMutation(originalBlob);
                     newBlobs.add(newBlob);
                 }
+
+
             }
+
+
+            // USED FOR TESTING FOOD SUCCESS CONDITION
+            // if (originalBlob.getEatenAmount() > 0) {
+            //     numOfAliveBlobs++;
+            //     // creating the original blob and putting it back into the next generation
+            //     Point point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
+            //     originalBlob.position = point;
+            //     int temp = originalBlob.eatenAmount;
+            //     originalBlob.eatenAmount = 0;
+    
+            //     // if the blob has eaten, spawn clones of the original blob with the amount of food it has eaten
+            //     for (int i = 0; i < temp + 1; i++) {
+            //         point = new Point(random.nextInt(mapSize), random.nextInt(mapSize));
+            //         BlobNeuralNetwork blobNetwork = originalBlob.neuralNetwork;
+            //         Blob clonedBlob = new Blob(point, blobNetwork);
+            //         newBlobs.add(clonedBlob);
+            //     }
+    
+            //     // if the blob survives, spawn clones with mutations
+            //     for (int i = 0; i < cloneSpawnAmount; i++) {
+            //         Blob newBlob = cloneBlobWithMutation(originalBlob);
+            //         newBlobs.add(newBlob);
+            //     }
+            // }
+
+
         }
     
         // Clear existing blobs and add the new ones
@@ -262,16 +298,16 @@ public class Simulator extends JPanel {
         return null;
     }
 
-    private void createNewFood(){
+    // private void createNewFood(){
 
-        foods.clear();
+    //     foods.clear();
     
-        // adding foods (can also change this to be the condition for blob to survive)
-        for (int i = 0; i < foodAmount; i++) {
-            foods.add(new Food(new Point(random.nextInt(mapSize), random.nextInt(mapSize))));
-        }
+    //     // adding foods (can also change this to be the condition for blob to survive)
+    //     for (int i = 0; i < foodAmount; i++) {
+    //         foods.add(new Food(new Point(random.nextInt(mapSize), random.nextInt(mapSize))));
+    //     }
 
-    }
+    // }
 
     // save the statistics of the simulation
     private void saveStatistics() {
@@ -313,6 +349,7 @@ public class Simulator extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        drawLine(g);
         drawFoods(g);
         drawBlobs(g);
     }
@@ -335,6 +372,13 @@ public class Simulator extends JPanel {
         }
     }
 
+    private void drawLine(Graphics g) {
+        // drawing vertical line in the middle and fill left side with light blue
+        g.setColor(Color.BLACK);
+        g.drawLine(mapSize/4, 0, mapSize/4, mapSize);
+        g.setColor(Color.CYAN);
+        g.fillRect(0, 0, mapSize/4, mapSize);
+    }
 
     private void drawFoods(Graphics g) {
         // drawing foods

@@ -1,91 +1,28 @@
 Generation: 0
-Num of Starting Blobs: 20
-Num of Dead Blobs: 14
-Num of Alive Blobs: 6
-Num of Food Left: 41
-Survival Rate: 0.3
-
-Generation: 1
-Num of Starting Blobs: 6
-Num of Dead Blobs: 4
-Num of Alive Blobs: 2
-Num of Food Left: 48
-Survival Rate: 0.3333333333333333
-
-Generation: 2
-Num of Starting Blobs: 2
-Num of Dead Blobs: 0
-Num of Alive Blobs: 2
-Num of Food Left: 47
-Survival Rate: 1.0
-
-Generation: 3
-Num of Starting Blobs: 2
-Num of Dead Blobs: -6
-Num of Alive Blobs: 8
-Num of Food Left: 39
-Survival Rate: 4.0
-
-Generation: 4
-Num of Starting Blobs: 8
-Num of Dead Blobs: 2
-Num of Alive Blobs: 6
-Num of Food Left: 41
-Survival Rate: 0.75
-
-Generation: 5
-Num of Starting Blobs: 6
-Num of Dead Blobs: -4
-Num of Alive Blobs: 10
-Num of Food Left: 40
-Survival Rate: 1.6666666666666667
-
-Generation: 6
 Num of Starting Blobs: 10
 Num of Dead Blobs: 6
 Num of Alive Blobs: 4
-Num of Food Left: 45
+Num of Food Left: 0
 Survival Rate: 0.4
 
-Generation: 7
+Generation: 1
 Num of Starting Blobs: 4
-Num of Dead Blobs: -1
-Num of Alive Blobs: 5
-Num of Food Left: 42
-Survival Rate: 1.25
-
-Generation: 8
-Num of Starting Blobs: 5
-Num of Dead Blobs: -1
-Num of Alive Blobs: 6
-Num of Food Left: 41
-Survival Rate: 1.2
-
-Generation: 9
-Num of Starting Blobs: 6
-Num of Dead Blobs: 1
-Num of Alive Blobs: 5
-Num of Food Left: 44
-Survival Rate: 0.8333333333333334
-
-Generation: 10
-Num of Starting Blobs: 5
 Num of Dead Blobs: -2
-Num of Alive Blobs: 7
-Num of Food Left: 43
-Survival Rate: 1.4
+Num of Alive Blobs: 6
+Num of Food Left: 0
+Survival Rate: 1.5
 
-Generation: 11
-Num of Starting Blobs: 7
-Num of Dead Blobs: 2
-Num of Alive Blobs: 5
-Num of Food Left: 44
-Survival Rate: 0.7142857142857143
+Generation: 2
+Num of Starting Blobs: 6
+Num of Dead Blobs: -3
+Num of Alive Blobs: 9
+Num of Food Left: 0
+Survival Rate: 1.5
 
-Generation: 12
-Num of Starting Blobs: 5
-Num of Dead Blobs: 0
-Num of Alive Blobs: 5
-Num of Food Left: 43
-Survival Rate: 1.0
+Generation: 3
+Num of Starting Blobs: 9
+Num of Dead Blobs: -8
+Num of Alive Blobs: 17
+Num of Food Left: 0
+Survival Rate: 1.8888888888888888
 
