@@ -15,11 +15,13 @@ public class Blob {
     public Point position;
     public BlobNeuralNetwork neuralNetwork;
     public static int mapSize;
-    public boolean hasEaten = false;
+    public int eatenAmount = 0;
     public static int numOfInputSensors;
     public static int numOfHiddenNeurons;
     public static int numOfOutputNeurons;
     public static int sensingRange;
+    public static int blobSize;
+    public Random random = new Random(System.currentTimeMillis());
 
 
     public Blob(Point position, BlobNeuralNetwork neuralNetwork) {
@@ -33,7 +35,7 @@ public class Blob {
             INDArray input = blob.generateInputVector(foods, blobs);
 
             // Generate target data based on the desired behavior (not implemented in this example)
-            INDArray target = blob.generateOutputVector(foods, blobs, input);
+            INDArray target = blob.generateOutputVector(input);
 
             blob.updateBlobPosition(target);
         }
@@ -49,8 +51,12 @@ public class Blob {
         // 1. Move right
         // 2. Move up
         // 3. Move down
-        // 4. Eat everything adjacent
-        // 5. Random Movement    
+        // 4. Move up left
+        // 5. Move up right
+        // 6. Move down left
+        // 7. Move down right
+        // 8. Eat everything adjacent
+        // 9. Random Movement    
         int numOutputs = output.columns();
     
         // Find the index with the maximum value in the output vector
@@ -63,49 +69,24 @@ public class Blob {
                 maxIndex = i;
             }
         }
-
-
         // Update the blob's position based on the identified action or direction
+        if (maxIndex >= 0 && maxIndex < 8){
+            moveInAdjacentDirection(maxIndex);
+
+        }
+
     switch (maxIndex) {
-        case 0:
-            position.x -= 1;
-            break;
-        case 1:
-            position.x += 1;
-            break;
-        case 2:
-            position.y -= 1;
-            break;
-        case 3:
-            position.y += 1;
-            break;
-        case 4:
+        case 8:
             // Eat everything adjacent, meaning remove all foods adjacent to the blob
             checkForFoodEating(Simulator.getInstance().foods);
             break;
-        case 5:
+        case 9:
             // Random Movement
-            Random random = new Random();
-            int randomDirection = random.nextInt(4);
-            switch (randomDirection) {
-                case 0:
-                    position.x -= 1;
-                    break;
-                case 1:
-                    position.x += 1;
-                    break;
-                case 2:
-                    position.y -= 1;
-                    break;
-                case 3:
-                    position.y += 1;
-                    break;
-            }
-            break;
+            int randomDirection = random.nextInt(8);
+            moveInAdjacentDirection(randomDirection);
         }
 
         // make sure the blob stays within the map which is 1080x1080
-
         if (position.x < 0) {
             position.x = 0;
         } else if (position.x > mapSize) {
@@ -120,17 +101,17 @@ public class Blob {
 
     }
 
-    public INDArray generateOutputVector(List<Food> foods, List<Blob> blobs, INDArray input) {
-        // Assuming numOutputs is the number of classes in your classification task
-        
-        // Initialize the output vector with zeros
-        INDArray outputVector = Nd4j.zeros(1, numOfOutputNeurons);
-    
+    public INDArray generateOutputVector(INDArray input) {
         // Get the raw output from the neural network
         INDArray rawOutput = neuralNetwork.predict(input);
+
+
+        // Find the index with the maximum value in the softmax output vector
+        int maxIndex = Nd4j.argMax(rawOutput, 1).getInt(0);
     
-        // Assuming the neural network is configured with softmax activation in the output layer
-        outputVector = rawOutput;
+        // Create a one-hot encoded vector for the selected action
+        INDArray outputVector = Nd4j.zeros(1, numOfOutputNeurons);
+        outputVector.putScalar(maxIndex, 1.0);
     
         return outputVector;
     }
@@ -194,7 +175,7 @@ public class Blob {
             }
 
             // Food adjacent to the blob make sure it is radius of blob
-            if (distance(position, food.position) <= 5) {
+            if (distance(position, food.position) <= blobSize) {
                 inputVector.putScalar(14, 1.0);
             }
 
@@ -244,11 +225,86 @@ public class Blob {
         Iterator<Food> iterator = foods.iterator();
         while (iterator.hasNext()) {
             Food food = iterator.next();
-            if (isAdjacent(food.position, 5)) {
-                hasEaten = true;
+            if (isAdjacent(food.position, blobSize)) {
+                eatenAmount++;
                 iterator.remove(); // Use iterator to safely remove the food
             }
         }
+    }
+
+    private void moveInAdjacentDirection(int index){
+         switch (index) {
+        case 0:
+            position.x -= 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.x += 1;
+            }
+
+            break;
+        case 1:
+            position.x += 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.x -= 1;
+            }
+            break;
+        case 2:
+            position.y -= 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.y += 1;
+            }
+            break;
+        case 3:
+            position.y += 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.y -= 1;
+            }
+            break;
+        case 4:
+            position.x -= 1;
+            position.y -= 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.x += 1;
+                position.y += 1;
+            }
+            break;
+        case 5:
+            position.x += 1;
+            position.y -= 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.x -= 1;
+                position.y += 1;
+            }
+            break;
+        case 6:
+            position.x -= 1;
+            position.y += 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.x += 1;
+                position.y -= 1;
+            }
+            break;
+        case 7:
+            position.x += 1;
+            position.y += 1;
+            if (checkForBlobCollision(Simulator.getInstance().blobs)){
+                position.x -= 1;
+                position.y -= 1;
+            }
+            break;
+         }
+        
+    }
+
+    private boolean checkForBlobCollision(List<Blob> blobs) {
+        // Iterate through all blobs and check for collision with the current blob
+        for (Blob otherBlob : blobs) {
+            if (!otherBlob.equals(this) && distance(position, otherBlob.position) < 10) {
+                // Collision detected
+                return true;
+            }
+        }
+        // No collision
+        return false;
     }
 
 
@@ -259,8 +315,8 @@ public class Blob {
 
     private double calculateDynamicWeight(double distance) {
         // Parameters for the Gaussian function
-        double sigma = 50.0; 
-        double mu = 1.0; 
+        double sigma = 500.0; // Half of radius
+        double mu = 0.0; // Center of the Gaussian function should be position of the blob
     
         // Gaussian function
         double exponent = -Math.pow(distance - mu, 2) / (2 * Math.pow(sigma, 2));
@@ -276,8 +332,8 @@ public class Blob {
     }
 
       // Method to check whether the blob has eaten
-      public boolean hasEaten() {
-        return hasEaten;
+      public int getEatenAmount() {
+        return eatenAmount;
     }
 
     

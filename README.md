@@ -12,3 +12,4 @@ If there are alot of dead blobs, it means they are more lucky than learning a st
 If there are only a few blobs and no food left, that means that they are so efficient at finding food that other blobs did no have time to get food in order to survive.
 
 This basic evolutionary process can become exponentially complex as more input sensors, output actions and inner neurons are added.
+
