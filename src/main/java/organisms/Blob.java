@@ -1,4 +1,5 @@
 package organisms;
+import java.awt.Color;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -133,6 +134,7 @@ public class Blob {
         // 12. Distance from nearest food
         // 13. Distance from nearest blob
         // 14. Food adjacent to the blob
+        // 15. Blob adjacent to the blob
 
     
         // Initialize the input vector with zeros
@@ -164,8 +166,6 @@ public class Blob {
                 double currentDistance = distance(position, food.position);
                 double currentNearestDistance = inputVector.getDouble(12);
                 if (currentDistance < currentNearestDistance || currentNearestDistance == 0) {
-                    inputVector.putScalar(12, currentDistance);
-
                     // Calculate dynamic weight based on the nearest food distance
                     double dynamicWeight = calculateDynamicWeight(currentDistance);
 
@@ -209,7 +209,12 @@ public class Blob {
                     currentDistance = calculateDynamicWeight(currentDistance);
                     inputVector.putScalar(13, currentDistance);
                 }
+                // Blob adjacent to the blob make sure it is radius of blob
+                if (distance(position, blob.position) <= blobSize * 2) {
+                    inputVector.putScalar(15, 1.0);
+                }
             }
+
         }
     
         // Distance from Borders
